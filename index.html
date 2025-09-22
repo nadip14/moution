@@ -3,62 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Летающая птичка</title>
+    <title>Управляемая птичка</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #1E90FF, #87CEEB);
             height: 100vh;
-            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
         .container {
             text-align: center;
             padding: 20px;
-            position: relative;
-            z-index: 2;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            z-index: 10;
         }
         
         h1 {
-            color: #333;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .score-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            font-size: 1.3rem;
+        }
+        
+        .score-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 20px;
+            border-radius: 10px;
+            min-width: 120px;
         }
         
         .bird {
             position: absolute;
-            font-size: 40px;
-            animation: fly 15s infinite;
-            z-index: 1;
-        }
-        
-        @keyframes fly {
-            0% {
-                top: 20%;
-                left: 5%;
-                transform: rotate(0deg);
-            }
-            25% {
-                top: 70%;
-                left: 80%;
-                transform: rotate(30deg);
-            }
-            50% {
-                top: 30%;
-                left: 60%;
-                transform: rotate(-20deg);
-            }
-            75% {
-                top: 80%;
-                left: 30%;
-                transform: rotate(10deg);
-            }
-            100% {
-                top: 20%;
-                left: 5%;
-                transform: rotate(0deg);
-            }
+            font-size: 60px;
+            transition: transform 0.2s;
+            z-index: 5;
+            user-select: none;
         }
         
         .cloud {
@@ -119,52 +133,325 @@
             right: 15px;
         }
         
+        .cloud3 {
+            width: 140px;
+            height: 80px;
+            top: 70%;
+            left: 20%;
+            animation: moveCloud 40s infinite linear;
+        }
+        
+        .cloud3:before {
+            width: 70px;
+            height: 70px;
+            top: -25px;
+            left: 20px;
+        }
+        
+        .cloud3:after {
+            width: 90px;
+            height: 90px;
+            top: -35px;
+            right: 20px;
+        }
+        
         @keyframes moveCloud {
             0% {
                 transform: translateX(0);
             }
             50% {
-                transform: translateX(50px);
+                transform: translateX(100px);
             }
             100% {
                 transform: translateX(0);
+            }
+        }
+        
+        .collectible {
+            position: absolute;
+            font-size: 24px;
+            animation: float 3s infinite ease-in-out;
+            z-index: 4;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+        
+        .controls-mobile {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .controls-mobile {
+                display: grid;
+                grid-template-areas:
+                    ". up ."
+                    "left . right"
+                    ". down .";
+            }
+            
+            .up { grid-area: up; }
+            .left { grid-area: left; }
+            .right { grid-area: right; }
+            .down { grid-area: down; }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                margin: 20px;
+                padding: 15px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Добро пожаловать на сайт с летающей птичкой!</h1>
-        <p>Наблюдайте, как птичка летает по экрану</p>
+        <h1>🐦 Управляемая птичка</h1>
+        <p>Используйте стрелки на клавиатуре, чтобы управлять птичкой и собирать звезды!</p>
+        
+        <div class="score-container">
+            <div class="score-box">Звезды: <span id="score">0</span></div>
+            <div class="score-box">Скорость: <span id="speed">5</span></div>
+        </div>
+        
+        <div class="instructions">
+            <p>Стрелка ВВЕРХ - лететь вверх</p>
+            <p>Стрелка ВНИЗ - лететь вниз</p>
+            <p>Стрелка ВЛЕВО - лететь влево</p>
+            <p>Стрелка ВПРАВО - лететь вправо</p>
+            <p>Пробел - ускориться</p>
+        </div>
     </div>
     
-    <div class="bird">🐦</div>
+    <div class="bird" id="bird">🐦</div>
     
     <div class="cloud cloud1"></div>
     <div class="cloud cloud2"></div>
+    <div class="cloud cloud3"></div>
+    
+    <div class="controls-mobile">
+        <button class="control-btn up" id="up">↑</button>
+        <button class="control-btn left" id="left">←</button>
+        <button class="control-btn right" id="right">→</button>
+        <button class="control-btn down" id="down">↓</button>
+    </div>
 
     <script>
-        // Добавляем несколько птичек для большего интереса
-        function createBird() {
-            const bird = document.createElement('div');
-            bird.className = 'bird';
-            bird.innerHTML = '🐦';
-            bird.style.fontSize = (20 + Math.random() * 30) + 'px';
-            
-            // Случайная начальная позиция
-            bird.style.top = Math.random() * 80 + 10 + '%';
-            bird.style.left = Math.random() * 80 + 10 + '%';
-            
-            // Случайная длительность анимации
-            bird.style.animationDuration = (10 + Math.random() * 20) + 's';
-            
-            document.body.appendChild(bird);
+        const bird = document.getElementById('bird');
+        const scoreElement = document.getElementById('score');
+        const speedElement = document.getElementById('speed');
+        
+        let posX = window.innerWidth / 2;
+        let posY = window.innerHeight / 2;
+        let score = 0;
+        let speed = 5;
+        let collectibles = [];
+        
+        // Устанавливаем начальное положение птички
+        bird.style.left = `${posX}px`;
+        bird.style.top = `${posY}px`;
+        
+        // Создаем коллекционные предметы
+        function createCollectibles() {
+            for (let i = 0; i < 10; i++) {
+                const collectible = document.createElement('div');
+                collectible.className = 'collectible';
+                collectible.innerHTML = '⭐';
+                
+                const x = Math.random() * (window.innerWidth - 50);
+                const y = Math.random() * (window.innerHeight - 50);
+                
+                collectible.style.left = `${x}px`;
+                collectible.style.top = `${y}px`;
+                
+                document.body.appendChild(collectible);
+                collectibles.push({
+                    element: collectible,
+                    x: x,
+                    y: y,
+                    collected: false
+                });
+            }
         }
         
-        // Создаем несколько птичек
-        for (let i = 0; i < 3; i++) {
-            createBird();
+        // Проверка столкновений с коллекционными предметами
+        function checkCollisions() {
+            const birdRect = {
+                left: posX,
+                top: posY,
+                right: posX + 60,
+                bottom: posY + 60
+            };
+            
+            collectibles.forEach(collectible => {
+                if (collectible.collected) return;
+                
+                const collectibleRect = {
+                    left: collectible.x,
+                    top: collectible.y,
+                    right: collectible.x + 24,
+                    bottom: collectible.y + 24
+                };
+                
+                if (birdRect.right > collectibleRect.left &&
+                    birdRect.left < collectibleRect.right &&
+                    birdRect.bottom > collectibleRect.top &&
+                    birdRect.top < collectibleRect.bottom) {
+                    
+                    collectible.collected = true;
+                    collectible.element.remove();
+                    score++;
+                    scoreElement.textContent = score;
+                    
+                    // Создаем новый коллекционный предмет
+                    setTimeout(() => {
+                        const newCollectible = document.createElement('div');
+                        newCollectible.className = 'collectible';
+                        newCollectible.innerHTML = '⭐';
+                        
+                        const x = Math.random() * (window.innerWidth - 50);
+                        const y = Math.random() * (window.innerHeight - 50);
+                        
+                        newCollectible.style.left = `${x}px`;
+                        newCollectible.style.top = `${y}px`;
+                        
+                        document.body.appendChild(newCollectible);
+                        
+                        collectible.x = x;
+                        collectible.y = y;
+                        collectible.collected = false;
+                        collectible.element = newCollectible;
+                    }, 2000);
+                }
+            });
         }
+        
+        // Обработка нажатий клавиш
+        function handleKeyDown(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                    moveBird(0, -speed);
+                    bird.style.transform = 'rotate(-30deg)';
+                    break;
+                case 'ArrowDown':
+                    moveBird(0, speed);
+                    bird.style.transform = 'rotate(30deg)';
+                    break;
+                case 'ArrowLeft':
+                    moveBird(-speed, 0);
+                    bird.style.transform = 'scaleX(-1) rotate(-30deg)';
+                    break;
+                case 'ArrowRight':
+                    moveBird(speed, 0);
+                    bird.style.transform = 'scaleX(1) rotate(-30deg)';
+                    break;
+                case ' ':
+                    speed = Math.min(15, speed + 1);
+                    speedElement.textContent = speed;
+                    break;
+            }
+        }
+        
+        // Сброс скорости при отпускании пробела
+        function handleKeyUp(e) {
+            if (e.key === ' ') {
+                speed = 5;
+                speedElement.textContent = speed;
+            } else {
+                // Плавный сброс поворота птички
+                setTimeout(() => {
+                    bird.style.transform = '';
+                }, 200);
+            }
+        }
+        
+        // Движение птички
+        function moveBird(deltaX, deltaY) {
+            posX = Math.max(0, Math.min(window.innerWidth - 60, posX + deltaX));
+            posY = Math.max(0, Math.min(window.innerHeight - 60, posY + deltaY));
+            
+            bird.style.left = `${posX}px`;
+            bird.style.top = `${posY}px`;
+            
+            checkCollisions();
+        }
+        
+        // Обработка кликов по кнопкам для мобильных устройств
+        function setupMobileControls() {
+            document.getElementById('up').addEventListener('click', () => moveBird(0, -speed));
+            document.getElementById('down').addEventListener('click', () => moveBird(0, speed));
+            document.getElementById('left').addEventListener('click', () => moveBird(-speed, 0));
+            document.getElementById('right').addEventListener('click', () => moveBird(speed, 0));
+            
+            // Сенсорные события для перемещения
+            let touchStartX, touchStartY;
+            
+            bird.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                e.preventDefault();
+            });
+            
+            bird.addEventListener('touchmove', (e) => {
+                if (!touchStartX || !touchStartY) return;
+                
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                
+                const deltaX = touchX - touchStartX;
+                const deltaY = touchY - touchStartY;
+                
+                moveBird(deltaX, deltaY);
+                
+                touchStartX = touchX;
+                touchStartY = touchY;
+                
+                e.preventDefault();
+            });
+        }
+        
+        // Инициализация
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('resize', () => {
+            // Удерживаем птичку в пределах экрана при изменении размера окна
+            posX = Math.max(0, Math.min(window.innerWidth - 60, posX));
+            posY = Math.max(0, Math.min(window.innerHeight - 60, posY));
+            bird.style.left = `${posX}px`;
+            bird.style.top = `${posY}px`;
+        });
+        
+        createCollectibles();
+        setupMobileControls();
     </script>
 </body>
 </html>
