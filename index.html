@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управляемая птичка со скрывающимся меню</title>
+    <title>Птичка и облака - игра на выживание</title>
     <style>
         * {
             margin: 0;
@@ -106,6 +106,7 @@
             background: white;
             border-radius: 50%;
             opacity: 0.8;
+            z-index: 3;
         }
         
         .cloud:before, .cloud:after {
@@ -234,6 +235,45 @@
             background: rgba(255, 255, 255, 0.5);
         }
         
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            color: white;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+        
+        .game-over h2 {
+            color: #FF6B6B;
+            margin-bottom: 20px;
+            font-size: 3rem;
+        }
+        
+        .restart-btn {
+            margin-top: 30px;
+            padding: 15px 30px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background: #45a049;
+        }
+        
         @media (max-width: 768px) {
             .controls-mobile {
                 display: grid;
@@ -256,6 +296,14 @@
                 font-size: 0.9rem;
                 padding: 8px;
             }
+            
+            .game-over {
+                font-size: 2rem;
+            }
+            
+            .game-over h2 {
+                font-size: 2.5rem;
+            }
         }
         
         .hint {
@@ -269,6 +317,7 @@
             font-size: 0.9rem;
             opacity: 0.7;
             transition: opacity 0.3s;
+            z-index: 10;
         }
         
         .hint.hidden {
@@ -278,17 +327,17 @@
 </head>
 <body>
     <div class="menu-container" id="menu">
-        <h1 class="menu-title">🐦 Управляемая птичка</h1>
+        <h1 class="menu-title">🐦 Птичка и облака</h1>
         
         <div class="score-container">
             <div class="score-box">Звезды: <span id="score">0</span></div>
             <div class="score-box">Скорость: <span id="speed">5</span></div>
+            <div class="score-box">Время: <span id="time">0</span> сек</div>
         </div>
         
         <div class="instructions">
-            <p>Стрелка ВВЕРХ - лететь вверх | Стрелка ВНИЗ - лететь вниз</p>
-            <p>Стрелка ВЛЕВО - лететь влево | Стрелка ВПРАВО - лететь вправо</p>
-            <p>Пробел - ускориться | M - показать/скрыть меню</p>
+            <p>Собирайте звезды и избегайте облаков!</p>
+            <p>Стрелки - движение | Пробел - ускориться | M - меню</p>
         </div>
     </div>
     
@@ -296,9 +345,9 @@
     
     <div class="bird" id="bird">🐦</div>
     
-    <div class="cloud cloud1"></div>
-    <div class="cloud cloud2"></div>
-    <div class="cloud cloud3"></div>
+    <div class="cloud cloud1" id="cloud1"></div>
+    <div class="cloud cloud2" id="cloud2"></div>
+    <div class="cloud cloud3" id="cloud3"></div>
     
     <div class="controls-mobile">
         <button class="control-btn up" id="up">↑</button>
@@ -308,22 +357,39 @@
     </div>
     
     <div class="hint" id="hint">Наведите курсор на верх экрана, чтобы показать меню</div>
+    
+    <div class="game-over" id="gameOver">
+        <h2>Игра окончена!</h2>
+        <p>Птичка столкнулась с облаком!</p>
+        <p>Ваш счет: <span id="finalScore">0</span> звезд</p>
+        <p>Вы продержались: <span id="finalTime">0</span> секунд</p>
+        <button class="restart-btn" id="restartBtn">Играть снова</button>
+    </div>
 
     <script>
         const bird = document.getElementById('bird');
         const scoreElement = document.getElementById('score');
         const speedElement = document.getElementById('speed');
+        const timeElement = document.getElementById('time');
         const menu = document.getElementById('menu');
         const toggleMenuBtn = document.getElementById('toggleMenu');
         const hint = document.getElementById('hint');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalTimeElement = document.getElementById('finalTime');
+        const restartBtn = document.getElementById('restartBtn');
         
         let posX = window.innerWidth / 2;
         let posY = window.innerHeight / 2;
         let score = 0;
         let speed = 5;
+        let gameTime = 0;
         let collectibles = [];
+        let clouds = [];
         let menuTimeout;
         let isMenuVisible = true;
+        let gameActive = true;
+        let gameTimer;
         
         // Устанавливаем начальное положение птички
         bird.style.left = `${posX}px`;
@@ -358,7 +424,7 @@
         
         // Показ меню при наведении на верхнюю часть экрана
         document.addEventListener('mousemove', (e) => {
-            if (e.clientY < 80 && !isMenuVisible) {
+            if (e.clientY < 80 && !isMenuVisible && gameActive) {
                 showMenu();
             }
         });
@@ -386,8 +452,35 @@
             }
         }
         
+        // Инициализация облаков
+        function initClouds() {
+            clouds = [
+                {
+                    element: document.getElementById('cloud1'),
+                    width: 100,
+                    height: 60,
+                    x: 100,
+                    y: 100
+                },
+                {
+                    element: document.getElementById('cloud2'),
+                    width: 120,
+                    height: 70,
+                    x: window.innerWidth - 200,
+                    y: 200
+                },
+                {
+                    element: document.getElementById('cloud3'),
+                    width: 140,
+                    height: 80,
+                    x: 200,
+                    y: window.innerHeight - 200
+                }
+            ];
+        }
+        
         // Проверка столкновений с коллекционными предметами
-        function checkCollisions() {
+        function checkCollectibleCollisions() {
             const birdRect = {
                 left: posX,
                 top: posY,
@@ -438,8 +531,60 @@
             });
         }
         
+        // Проверка столкновений с облаками
+        function checkCloudCollisions() {
+            if (!gameActive) return;
+            
+            const birdRect = {
+                left: posX + 10,
+                top: posY + 10,
+                right: posX + 50,
+                bottom: posY + 50
+            };
+            
+            clouds.forEach(cloud => {
+                const cloudRect = {
+                    left: cloud.x,
+                    top: cloud.y,
+                    right: cloud.x + cloud.width,
+                    bottom: cloud.y + cloud.height
+                };
+                
+                if (birdRect.right > cloudRect.left &&
+                    birdRect.left < cloudRect.right &&
+                    birdRect.bottom > cloudRect.top &&
+                    birdRect.top < cloudRect.bottom) {
+                    
+                    // Столкновение с облаком
+                    gameOver();
+                }
+            });
+        }
+        
+        // Конец игры
+        function gameOver() {
+            gameActive = false;
+            bird.style.display = 'none';
+            
+            // Показываем экран окончания игры
+            finalScoreElement.textContent = score;
+            finalTimeElement.textContent = gameTime;
+            gameOverScreen.style.display = 'flex';
+            
+            // Останавливаем таймер
+            clearInterval(gameTimer);
+        }
+        
+        // Перезапуск игры
+        function restartGame() {
+            // Перезагружаем страницу
+            location.reload();
+        }
+        
         // Обработка нажатий клавиш
         function handleKeyDown(e) {
+            if (!gameActive) return;
+            
             switch(e.key) {
                 case 'ArrowUp':
                     moveBird(0, -speed);
@@ -489,13 +634,40 @@
         
         // Движение птички
         function moveBird(deltaX, deltaY) {
+            if (!gameActive) return;
+            
             posX = Math.max(0, Math.min(window.innerWidth - 60, posX + deltaX));
             posY = Math.max(0, Math.min(window.innerHeight - 60, posY + deltaY));
             
             bird.style.left = `${posX}px`;
             bird.style.top = `${posY}px`;
             
-            checkCollisions();
+            checkCollectibleCollisions();
+            checkCloudCollisions();
+        }
+        
+        // Обновление позиций облаков
+        function updateClouds() {
+            if (!gameActive) return;
+            
+            clouds.forEach(cloud => {
+                // Получаем текущую позицию облака
+                const rect = cloud.element.getBoundingClientRect();
+                cloud.x = rect.left;
+                cloud.y = rect.top;
+            });
+            
+            checkCloudCollisions();
+        }
+        
+        // Таймер игры
+        function startGameTimer() {
+            gameTimer = setInterval(() => {
+                if (gameActive) {
+                    gameTime++;
+                    timeElement.textContent = gameTime;
+                }
+            }, 1000);
         }
         
         // Обработка кликов по кнопкам для мобильных устройств
@@ -515,7 +687,7 @@
             });
             
             bird.addEventListener('touchmove', (e) => {
-                if (!touchStartX || !touchStartY) return;
+                if (!touchStartX || !touchStartY || !gameActive) return;
                 
                 const touchX = e.touches[0].clientX;
                 const touchY = e.touches[0].clientY;
@@ -543,11 +715,20 @@
             bird.style.top = `${posY}px`;
         });
         
+        // Обработчик кнопки перезапуска
+        restartBtn.addEventListener('click', restartGame);
+        
         // Запускаем таймер скрытия меню
         menuTimeout = setTimeout(hideMenu, 5000);
         
+        // Инициализация игры
         createCollectibles();
+        initClouds();
         setupMobileControls();
+        startGameTimer();
+        
+        // Постоянная проверка столкновений с облаками
+        setInterval(updateClouds, 100);
     </script>
 </body>
 </html>
