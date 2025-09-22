@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управляемая птичка</title>
+    <title>Управляемая птичка со скрывающимся меню</title>
     <style>
         * {
             margin: 0;
@@ -16,55 +16,79 @@
             background: linear-gradient(to bottom, #1E90FF, #87CEEB);
             height: 100vh;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
-        .container {
-            text-align: center;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            z-index: 10;
+        .menu-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
-        h1 {
-            font-size: 2.5rem;
+        .menu-container.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .menu-title {
+            font-size: 1.8rem;
             margin-bottom: 10px;
             color: #FFD700;
-        }
-        
-        p {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
+            text-align: center;
         }
         
         .instructions {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px;
             border-radius: 10px;
-            margin-top: 20px;
+            margin-top: 10px;
+            text-align: center;
+            max-width: 500px;
         }
         
         .score-container {
             display: flex;
             justify-content: center;
-            gap: 30px;
-            margin: 20px 0;
-            font-size: 1.3rem;
+            gap: 20px;
+            margin: 10px 0;
+            font-size: 1.1rem;
         }
         
         .score-box {
             background: rgba(0, 0, 0, 0.4);
-            padding: 10px 20px;
-            border-radius: 10px;
-            min-width: 120px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            min-width: 100px;
+        }
+        
+        .toggle-menu {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .bird {
@@ -73,6 +97,8 @@
             transition: transform 0.2s;
             z-index: 5;
             user-select: none;
+            left: 50%;
+            top: 50%;
         }
         
         .cloud {
@@ -222,21 +248,37 @@
             .right { grid-area: right; }
             .down { grid-area: down; }
             
-            h1 {
-                font-size: 2rem;
+            .menu-title {
+                font-size: 1.5rem;
             }
             
-            .container {
-                margin: 20px;
-                padding: 15px;
+            .instructions {
+                font-size: 0.9rem;
+                padding: 8px;
             }
+        }
+        
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        
+        .hint.hidden {
+            opacity: 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🐦 Управляемая птичка</h1>
-        <p>Используйте стрелки на клавиатуре, чтобы управлять птичкой и собирать звезды!</p>
+    <div class="menu-container" id="menu">
+        <h1 class="menu-title">🐦 Управляемая птичка</h1>
         
         <div class="score-container">
             <div class="score-box">Звезды: <span id="score">0</span></div>
@@ -244,13 +286,13 @@
         </div>
         
         <div class="instructions">
-            <p>Стрелка ВВЕРХ - лететь вверх</p>
-            <p>Стрелка ВНИЗ - лететь вниз</p>
-            <p>Стрелка ВЛЕВО - лететь влево</p>
-            <p>Стрелка ВПРАВО - лететь вправо</p>
-            <p>Пробел - ускориться</p>
+            <p>Стрелка ВВЕРХ - лететь вверх | Стрелка ВНИЗ - лететь вниз</p>
+            <p>Стрелка ВЛЕВО - лететь влево | Стрелка ВПРАВО - лететь вправо</p>
+            <p>Пробел - ускориться | M - показать/скрыть меню</p>
         </div>
     </div>
+    
+    <button class="toggle-menu" id="toggleMenu">≡</button>
     
     <div class="bird" id="bird">🐦</div>
     
@@ -264,21 +306,62 @@
         <button class="control-btn right" id="right">→</button>
         <button class="control-btn down" id="down">↓</button>
     </div>
+    
+    <div class="hint" id="hint">Наведите курсор на верх экрана, чтобы показать меню</div>
 
     <script>
         const bird = document.getElementById('bird');
         const scoreElement = document.getElementById('score');
         const speedElement = document.getElementById('speed');
+        const menu = document.getElementById('menu');
+        const toggleMenuBtn = document.getElementById('toggleMenu');
+        const hint = document.getElementById('hint');
         
         let posX = window.innerWidth / 2;
         let posY = window.innerHeight / 2;
         let score = 0;
         let speed = 5;
         let collectibles = [];
+        let menuTimeout;
+        let isMenuVisible = true;
         
         // Устанавливаем начальное положение птички
         bird.style.left = `${posX}px`;
         bird.style.top = `${posY}px`;
+        
+        // Функция для скрытия меню
+        function hideMenu() {
+            menu.classList.add('hidden');
+            isMenuVisible = false;
+            hint.classList.remove('hidden');
+        }
+        
+        // Функция для показа меню
+        function showMenu() {
+            menu.classList.remove('hidden');
+            isMenuVisible = true;
+            hint.classList.add('hidden');
+            
+            // Перезапускаем таймер скрытия меню
+            clearTimeout(menuTimeout);
+            menuTimeout = setTimeout(hideMenu, 3000);
+        }
+        
+        // Переключение меню по кнопке
+        toggleMenuBtn.addEventListener('click', () => {
+            if (isMenuVisible) {
+                hideMenu();
+            } else {
+                showMenu();
+            }
+        });
+        
+        // Показ меню при наведении на верхнюю часть экрана
+        document.addEventListener('mousemove', (e) => {
+            if (e.clientY < 80 && !isMenuVisible) {
+                showMenu();
+            }
+        });
         
         // Создаем коллекционные предметы
         function createCollectibles() {
@@ -378,6 +461,16 @@
                     speed = Math.min(15, speed + 1);
                     speedElement.textContent = speed;
                     break;
+                case 'm':
+                case 'M':
+                case 'ь':
+                case 'Ь':
+                    if (isMenuVisible) {
+                        hideMenu();
+                    } else {
+                        showMenu();
+                    }
+                    break;
             }
         }
         
@@ -449,6 +542,9 @@
             bird.style.left = `${posX}px`;
             bird.style.top = `${posY}px`;
         });
+        
+        // Запускаем таймер скрытия меню
+        menuTimeout = setTimeout(hideMenu, 5000);
         
         createCollectibles();
         setupMobileControls();
